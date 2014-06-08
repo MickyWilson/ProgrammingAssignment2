@@ -1,20 +1,31 @@
-## Put comments here that give an overall description of what your
-## functions do
-
-## Write a short comment describing this function
+## Caching the Inverse of a Matrix
 ##
-## makeCacheMatrix(mat)
+## Matrix inversion is usually a costly computation and their may be some benefit to caching the inverse of a matrix rather than compute it repeatedly (there are also alternatives to matrix inversion that we will not discuss here). 
+## This module conatins a pair of functions 
+##   makeCachedMatrix
+##   cacheSolve
+## that together can be used to calculate and cache the inverse of a matrix.
+##
+## Usage:
+##    cm = makeCachedMatrix(matrix)
+##    inverse = cacheSolve(cm,...)
+##    ....
+##    inverse = cacheSolve(cm,...)
+##
+## The first call to cachSolve will calculate the inverse of matrix, which may be a relatively long process.
+## However, the 2nd and subsequent calls will uses the pre-computed (cached) value.
+## 
+## The user may also call cm$set(new_matrix) to set the underlying matrix
+##
 makeCacheMatrix <- function(mat = matrix()) {
-    # 
-    # mat        is the matrix we are caching the inverse for
-    # inverse    holds the inverse of given matrix
+    
+    # Variables in this lexical scope
+    # mat        is the matrix we are caching the inverse for - (passed in as argument)
+    # inverse    holds the inverse of the given matrix mat, or NULL
     #
     inverse <- NULL
     
-    #
-    # function: set(new_matrix)
-    #    sets 
-    #
+    # set: Set the underlying matrix.  Resets the cached inverse value. 
     set <- function(new_matrix) {
         # set matrix
         mat <<- new_matrix
@@ -23,26 +34,29 @@ makeCacheMatrix <- function(mat = matrix()) {
         inverse <<- NULL
     }
     
-    # Returns the matrix
-    get <- function() mat
+    # get: Returns the underlying matrix
+    get <- function() 
+        mat
     
-    # Sets the inverse matrix
-    setinverse <- function(inv) inverse <<- inv
+    # setinverse: Sets the inverse of the underliying matrix
+    setinverse <- function(inv) 
+        inverse <<- inv
     
-    # returns the current inverse
-    getinverse <- function() inverse
+    # getinverse: Gets the inverse of the underliying matrix
+    getinverse <- function() 
+        inverse
     
-    # Return our 'object'
-    list(set = set, get = get,
+    # return list of functions
+    list(set = set, 
+         get = get,
          setinverse = setinverse,
          getinverse = getinverse)
     
 }
 
-
-## Write a short comment describing this function
-## Returns identity matrix for cached matrix
-## Varaible arguments
+##
+## cacheSolve : Returns identity matrix for cached matrix
+##
 cacheSolve <- function(cachedMatrix, ...) {
     # get inverse from 'x'
     inverse <- cachedMatrix$getinverse()
@@ -65,42 +79,51 @@ cacheSolve <- function(cachedMatrix, ...) {
 ## Test
 ##
 test <- function() {
-    c = matrix(c(1,2,3,4), nrow=2)
-    inv_c = solve(c)
-    cm = makeCacheMatrix(c)
-    stopifnot(cm$get()==c)
-    result = cacheSolve(cm)
-    stopifnot(result==inv_c)
-    result2 = cacheSolve(cm)
-    stopifnot(result2==inv_c)    
-    result3 = cacheSolve(cm)
-    stopifnot(result3==inv_c)
-    cm$set(c)
-    result3 = cacheSolve(cm)
-    result3 = cacheSolve(cm)    
-}
-makeVector <- function(x = numeric()) {
-    m <- NULL
-    set <- function(y) {
-        x <<- y
-        m <<- NULL
-    }
-    get <- function() x
-    setmean <- function(mean) m <<- mean
-    getmean <- function() m
-    list(set = set, get = get,
-         setmean = setmean,
-         getmean = getmean)
-}
+    # Get reference data (matrix and its inverse)
+    m = matrix(c(1,2,3,4), nrow=2)
+    id = matrix(c(1,0,0,1),nrow=2)
+    m_inv = solve(m)
+    # sanity check
+    stopifnot(m%*%m_inv==id)
+    
+    # create cache of matrix
+    cm = makeCacheMatrix(m)
+    message("Testing $get")
+    stopifnot(cm$get()==m)
 
-cachemean <- function(x, ...) {
-    m <- x$getmean()
-    if(!is.null(m)) {
-        message("getting cached data")
-        return(m)
+    for(i in 1:3){
+        message("Calling cachSolve")
+        cm_inv = cacheSolve(cm)
+        stopifnot(cm_inv== m_inv)        
     }
-    data <- x$get()
-    m <- mean(data, ...)
-    x$setmean(m)
-    m
+
+    #
+    # Check set works
+    #
+    m2 = matrix(c(4,3,2,1), nrow=2)
+    message("Testing $set")
+    cm$set(m2)
+    stopifnot(cm$get()==m2)
+    
+    #
+    # check inverse now works on new matrix data
+    #
+    # Should get cached message first time in loop
+    for(i in 1:3){
+        message("Calling cachSolve")
+        m2_inv = cacheSolve(cm)
+        stopifnot(m2_inv%*%m2==id)
+    }
+    
+    hilbert <- function(n) { i <- 1:n; 1 / outer(i - 1, i, "+") }
+    h8 <- hilbert(8); h8
+    sh8 <- solve(h8)
+    print(round(sh8 %*% h8, 3))
+    
+    A <- hilbert(4)
+    A[] <- as.complex(A)
+    ## might not be supported on all platforms
+    try(solve(A))
+    
+    message("Passed all tests")
 }
