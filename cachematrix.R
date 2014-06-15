@@ -1,6 +1,7 @@
+###############################################################################
 ## Caching the Inverse of a Matrix
+###############################################################################
 ##
-## Matrix inversion is usually a costly computation and their may be some benefit to caching the inverse of a matrix rather than compute it repeatedly (there are also alternatives to matrix inversion that we will not discuss here). 
 ## This module conatins a pair of functions 
 ##   makeCachedMatrix
 ##   cacheSolve
@@ -12,11 +13,25 @@
 ##    ....
 ##    inverse = cacheSolve(cm,...)
 ##
-## The first call to cachSolve will calculate the inverse of matrix, which may be a relatively long process.
-## However, the 2nd and subsequent calls will uses the pre-computed (cached) value.
+## The first call to cachSolve will calculate the inverse of matrix, 
+## which may be a relatively long process.  The calculated inverse will be 
+## cached (saved) and returned to the caller.
+## The 2nd and subsequent calls will uses the pre-computed (cached) value.
 ## 
-## The user may also call cm$set(new_matrix) to set the underlying matrix
+## The user may also call cm$set(new_matrix) to set the underlying matrix, in which
+## case the cached value will be reset, meaning the inverse will be recalculated next time 
+## it is required.
 ##
+###############################################################################
+
+###############################################################################
+## Function   : makeCacheMatrix
+## Description: Make a 'CachedMatrix'
+## Argument(s): mat -> matrix to cache inverse calculations for.
+##                  User is responsible for ensuring matrix can be inverted
+##                  Default value is an empty matrix
+## Returns    : List object that can be used as agrument to cacheSolve
+###############################################################################
 makeCacheMatrix <- function(mat = matrix()) {
     
     # Variables in this lexical scope
@@ -54,9 +69,12 @@ makeCacheMatrix <- function(mat = matrix()) {
     
 }
 
-##
-## cacheSolve : Returns identity matrix for cached matrix
-##
+###############################################################################
+## Function   : cacheSolve
+## Description: Returns identity matrix for cached matrix
+## Argument(s): cachedMatrix - object returned from makeCachedMatrix                 
+## Returns    : Identity matrix 
+###############################################################################
 cacheSolve <- function(cachedMatrix, ...) {
     # get inverse from 'x'
     inverse <- cachedMatrix$getinverse()
@@ -69,14 +87,14 @@ cacheSolve <- function(cachedMatrix, ...) {
     message("calculating inverse")
     # get identity matrix.  2nd argument is missing so as to get identity matrix
     inverse <- solve(cachedMatrix$get(),,...)
-    # store/cache results
+    # store/cache results before returing result
     cachedMatrix$setinverse(inverse)
     
     inverse
 }
 
 ##
-## Test
+## Test harness
 ##
 test <- function() {
     # Get reference data (matrix and its inverse)
@@ -114,16 +132,6 @@ test <- function() {
         m2_inv = cacheSolve(cm)
         stopifnot(m2_inv%*%m2==id)
     }
-    
-    hilbert <- function(n) { i <- 1:n; 1 / outer(i - 1, i, "+") }
-    h8 <- hilbert(8); h8
-    sh8 <- solve(h8)
-    print(round(sh8 %*% h8, 3))
-    
-    A <- hilbert(4)
-    A[] <- as.complex(A)
-    ## might not be supported on all platforms
-    try(solve(A))
     
     message("Passed all tests")
 }
